@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-@Service
+//@Service
 public class KafkaConsumerServiceImpl implements KafkaConsumerService {
     private final Logger logger =
             LoggerFactory.getLogger(KafkaConsumerServiceImpl.class);
