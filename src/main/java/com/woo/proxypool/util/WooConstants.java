@@ -10,4 +10,6 @@ public class WooConstants {
     public static final Integer DEAD = 3;
     public static final Integer EXHAUSTED = 4;
 
+    public static final Long SECONDSQUEUEDIFFINMILISEC = 1000L;
+
 }

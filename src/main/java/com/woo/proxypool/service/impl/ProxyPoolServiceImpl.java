@@ -3,10 +3,13 @@ package com.woo.proxypool.service.impl;
 import com.woo.proxypool.data.entity.ProxyList;
 import com.woo.proxypool.data.repository.ProxyListRepository;
 import com.woo.proxypool.service.api.ProxyPoolService;
+import com.woo.proxypool.util.RateLimitingQueue;
+import com.woo.proxypool.util.WooConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 @Service
 public class ProxyPoolServiceImpl implements ProxyPoolService {
@@ -16,6 +19,11 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
 
     @Override
     public String getAProxy() {
+        String ip = this.getReadyOrInUserIPFromDB();
+        if (ip != null) {
+
+            return ip;
+        }
         return null;
     }
 
@@ -90,5 +98,47 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
     @Override
     public void addProxyListBulk(ArrayList<ProxyList> proxies) {
         proxyListRepository.saveAll(proxies);
+    }
+
+    @Override
+    public String getReadyOrInUserIPFromDB() {
+        ProxyList proxy = null;
+        try {
+            proxy = proxyListRepository.findOneByStatus(WooConstants.INUSE);
+            if (null == proxy) {
+                proxy = proxyListRepository.findOneByStatus(WooConstants.READY);
+                if (proxy != null) {
+                    RateLimitingQueue.getInstance().initQueues();
+                }
+            }
+        } catch (Exception e) {
+            // TODO: Set proper error message for exception
+        }
+        if (proxy != null) {
+            proxy.setStatus(WooConstants.INUSE);
+            proxyListRepository.save(proxy);
+            return proxy.getIp();
+        }
+        return null;
+    }
+
+    @Override
+    public Boolean checkIfLimitsExhausted(Long time) {
+        try {
+            HashMap<String, Integer> queuesCount = RateLimitingQueue.getInstance().getCountOfItemsInAllQueues();
+            HashMap<String, ArrayList<Long>> queues = RateLimitingQueue.getInstance().getAllQueues();
+            ArrayList<Long> secondsQueue = queues.get("secondsQueue");
+            ArrayList<Long> minutesQueue = queues.get("minutesQueue");
+            ArrayList<Long> dayQueue = queues.get("dayQueue");
+            if (queuesCount.get("secondsQueue") > 49 && RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(secondsQueue.get(0), time, WooConstants.SECONDSQUEUEDIFFINMILISEC)) {
+                RateLimitingQueue.getInstance().initQueues();
+
+            } else {
+                secondsQueue.add(time);
+            }
+        } catch (Exception e) {
+            // TODO: Set proper error message for exception
+        }
+        return true;
     }
 }

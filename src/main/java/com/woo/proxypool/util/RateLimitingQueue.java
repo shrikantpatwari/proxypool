@@ -1,6 +1,8 @@
 package com.woo.proxypool.util;
 
+import javax.xml.crypto.Data;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 public class RateLimitingQueue {
@@ -39,5 +41,13 @@ public class RateLimitingQueue {
             put("minutesQueue", minutesQueue.size());
             put("dayQueue", dayQueue.size());
         }};
+    }
+
+    public Boolean isTimeDifferenceGreaterThanEqualTo(Long timeT1, Long timeT2, Long diffInMilliSeconds) {
+        Long diff = timeT2 - timeT1;
+        if (diff >= diffInMilliSeconds) {
+            return true;
+        }
+        return false;
     }
 }

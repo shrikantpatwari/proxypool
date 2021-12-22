@@ -12,4 +12,8 @@ public interface ProxyPoolService {
     Long getCountOfDBAvailableIP();
 
     void addProxyListBulk(ArrayList<ProxyList> proxies);
+
+    String getReadyOrInUserIPFromDB();
+
+    Boolean checkIfLimitsExhausted(Long time);
 }
