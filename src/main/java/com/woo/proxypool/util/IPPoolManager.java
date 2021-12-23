@@ -2,35 +2,44 @@ package com.woo.proxypool.util;
 
 import com.woo.proxypool.data.entity.ProxyList;
 import com.woo.proxypool.service.api.ProxyPoolService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+
 
 import java.util.ArrayList;
 
 public class IPPoolManager {
+    Logger logger = LoggerFactory.getLogger(IPPoolManager.class);
     private static IPPoolManager ipPoolManager = null;
 
-    @Autowired
-    ProxyPoolService proxyPoolService;
+    private final ApplicationContext applicationContext;
+    private final ProxyPoolService proxyPoolService;
 
-    private IPPoolManager() {}
+    private IPPoolManager(ApplicationContext context) {
+        this.applicationContext = context;
+        this.proxyPoolService = context.getBean(ProxyPoolService.class);
+    }
 
-    public static IPPoolManager getInstance() {
+    public static IPPoolManager getInstance(ApplicationContext context) {
         if (ipPoolManager == null) {
-            ipPoolManager = new IPPoolManager();
+            ipPoolManager = new IPPoolManager(context);
         }
         return ipPoolManager;
     }
 
     public void getAndCreateIPPool() {
-        if (proxyPoolService.getCountOfDBAvailableIP() < 1) {
+        logger.info("getAndCreateIPPool");
+        if (proxyPoolService != null && (null == proxyPoolService.getCountOfDBAvailableIP() || proxyPoolService.getCountOfDBAvailableIP() < 1)) {
             ArrayList<String> proxyList = proxyPoolService.getThirdPartyProxyList();
             // Adding available proxy list in db
             ArrayList<ProxyList> proxyListWithStatus = new ArrayList<>();
             proxyList.forEach((proxy) -> {
-                ProxyList pl = new ProxyList();
-                pl.setIp(proxy);
-                pl.setStatus(WooConstants.READY);
-                proxyListWithStatus.add(pl);
+                if (proxy != null) {
+                    proxyListWithStatus.add(new ProxyList(proxy, WooConstants.READY));
+                }
             });
             proxyPoolService.addProxyListBulk(proxyListWithStatus);
         }
@@ -41,4 +50,7 @@ public class IPPoolManager {
         //
     }
 
+    public ApplicationContext getContext() {
+        return applicationContext;
+    }
 }

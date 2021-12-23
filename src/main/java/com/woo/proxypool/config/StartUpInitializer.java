@@ -11,6 +11,6 @@ public class StartUpInitializer {
     @EventListener
     public void handleContextRefresh(ContextRefreshedEvent event) {
         RateLimitingQueue.getInstance().initQueues();
-        IPPoolManager.getInstance().getAndCreateIPPool();
+        IPPoolManager.getInstance(event.getApplicationContext()).getAndCreateIPPool();
     }
 }

@@ -5,6 +5,8 @@ import com.woo.proxypool.data.repository.ProxyListRepository;
 import com.woo.proxypool.service.api.ProxyPoolService;
 import com.woo.proxypool.util.RateLimitingQueue;
 import com.woo.proxypool.util.WooConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,21 +17,25 @@ import java.util.HashMap;
 @Service
 public class ProxyPoolServiceImpl implements ProxyPoolService {
 
+    Logger logger = LoggerFactory.getLogger(ProxyPoolServiceImpl.class);
+
     @Autowired
     ProxyListRepository proxyListRepository;
 
     @Override
     public String getAProxy() {
-        String ip = this.getReadyOrInUserIPFromDB();
-        if (ip != null) {
+        ProxyList inUseProxy = this.getReadyOrInUserIPFromDB();
+        if (inUseProxy != null) {
             Date currentDate = new Date();
             if (this.checkIfLimitsExhausted(currentDate.getTime())) {
-                String newIp = this.getReadyOrInUserIPFromDB();
+                inUseProxy.setStatus(WooConstants.EXHAUSTED);
+                proxyListRepository.save(inUseProxy);
+                ProxyList newIp = this.getReadyOrInUserIPFromDB();
                 if (newIp != null) {
-                    return newIp;
+                    return newIp.getIp();
                 }
             }
-            return ip;
+            return inUseProxy.getIp();
         }
         return null;
     }
@@ -99,16 +105,21 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
 
     @Override
     public Long getCountOfDBAvailableIP() {
-        return proxyListRepository.count();
+        Long count = proxyListRepository.count();
+        logger.info(String.valueOf(count));
+        return count;
     }
 
     @Override
     public void addProxyListBulk(ArrayList<ProxyList> proxies) {
+        proxies.forEach((p) -> {
+            logger.info( "addProxyListBulk" + p.toString());
+        });
         proxyListRepository.saveAll(proxies);
     }
 
     @Override
-    public String getReadyOrInUserIPFromDB() {
+    public ProxyList getReadyOrInUserIPFromDB() {
         ProxyList proxy = null;
         try {
             proxy = proxyListRepository.findOneByStatus(WooConstants.IN_USE);
@@ -124,7 +135,7 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
         if (proxy != null) {
             proxy.setStatus(WooConstants.IN_USE);
             proxyListRepository.save(proxy);
-            return proxy.getIp();
+            return proxy;
         }
         return null;
     }
@@ -146,7 +157,7 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
                     secondsQueue.remove(0);
                 }
             }
-            if (queuesCount.get("minutesQueue") > WooConstants.MINUTES_QUEUE_LIMIT) {
+            if (!limitExhausted && queuesCount.get("minutesQueue") > WooConstants.MINUTES_QUEUE_LIMIT) {
                 if (RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(minutesQueue.get(0), time, WooConstants.MINUTES_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
                     RateLimitingQueue.getInstance().initQueues();
                     limitExhausted = true;
@@ -154,7 +165,7 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
                     minutesQueue.remove(0);
                 }
             }
-            if (queuesCount.get("dayQueue") > WooConstants.DAY_QUEUE_LIMIT) {
+            if (!limitExhausted && queuesCount.get("dayQueue") > WooConstants.DAY_QUEUE_LIMIT) {
                 if (RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(minutesQueue.get(0), time, WooConstants.DAY_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
                     RateLimitingQueue.getInstance().initQueues();
                     limitExhausted = true;

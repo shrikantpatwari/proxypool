@@ -6,3 +6,5 @@ CREATE TABLE proxy_list (
   updated_at datetime NULL,
   CONSTRAINT pk_proxy_list PRIMARY KEY (id)
 );
+
+CREATE SEQUENCE CLIENT_SEQUENCE_ID START WITH (select max(id) + 1 from proxy_list);

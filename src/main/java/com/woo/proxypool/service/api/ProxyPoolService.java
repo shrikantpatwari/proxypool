@@ -13,7 +13,7 @@ public interface ProxyPoolService {
 
     void addProxyListBulk(ArrayList<ProxyList> proxies);
 
-    String getReadyOrInUserIPFromDB();
+    ProxyList getReadyOrInUserIPFromDB();
 
     Boolean checkIfLimitsExhausted(Long time);
 }
