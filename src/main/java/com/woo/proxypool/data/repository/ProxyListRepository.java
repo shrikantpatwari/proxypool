@@ -7,7 +7,5 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface ProxyListRepository extends JpaRepository<ProxyList, Long> {
-
-    @Query("select p from ProxyList p where p.status = ?1")
-    ProxyList findOneByStatus(Integer status);
+    ProxyList findFirstByStatus(Integer status);
 }

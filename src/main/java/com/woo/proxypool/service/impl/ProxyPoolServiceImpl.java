@@ -112,9 +112,6 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
 
     @Override
     public void addProxyListBulk(ArrayList<ProxyList> proxies) {
-        proxies.forEach((p) -> {
-            logger.info( "addProxyListBulk" + p.toString());
-        });
         proxyListRepository.saveAll(proxies);
     }
 
@@ -122,17 +119,19 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
     public ProxyList getReadyOrInUserIPFromDB() {
         ProxyList proxy = null;
         try {
-            proxy = proxyListRepository.findOneByStatus(WooConstants.IN_USE);
+            proxy = proxyListRepository.findFirstByStatus(WooConstants.IN_USE);
             if (null == proxy) {
-                proxy = proxyListRepository.findOneByStatus(WooConstants.READY);
+                proxy = proxyListRepository.findFirstByStatus(WooConstants.READY);
                 if (proxy != null) {
                     RateLimitingQueue.getInstance().initQueues();
                 }
             }
         } catch (Exception e) {
             // TODO: Set proper error message for exception
+            logger.error(e.getMessage(), e);
         }
         if (proxy != null) {
+            logger.info(proxy.getIp());
             proxy.setStatus(WooConstants.IN_USE);
             proxyListRepository.save(proxy);
             return proxy;
@@ -143,7 +142,7 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
     @Override
     public Boolean checkIfLimitsExhausted(Long time) {
         try {
-            Boolean limitExhausted = false;
+            boolean limitExhausted = false;
             HashMap<String, Integer> queuesCount = RateLimitingQueue.getInstance().getCountOfItemsInAllQueues();
             HashMap<String, ArrayList<Long>> queues = RateLimitingQueue.getInstance().getAllQueues();
             ArrayList<Long> secondsQueue = queues.get("secondsQueue");
@@ -179,6 +178,7 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
             return limitExhausted;
         } catch (Exception e) {
             // TODO: Set proper error message for exception
+            logger.error(e.getMessage(), e);
         }
         return true;
     }
