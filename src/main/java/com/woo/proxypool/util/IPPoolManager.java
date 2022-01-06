@@ -2,17 +2,15 @@ package com.woo.proxypool.util;
 
 import com.woo.proxypool.data.entity.ProxyList;
 import com.woo.proxypool.service.api.ProxyPoolService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 
 
 import java.util.ArrayList;
 
+@Slf4j
 public class IPPoolManager {
-    Logger logger = LoggerFactory.getLogger(IPPoolManager.class);
+
     private static IPPoolManager ipPoolManager = null;
 
     private final ApplicationContext applicationContext;
@@ -31,10 +29,11 @@ public class IPPoolManager {
     }
 
     public void getAndCreateIPPool() {
-        logger.info("getAndCreateIPPool");
+        log.info("getAndCreateIPPool");
         if (proxyPoolService != null && (null == proxyPoolService.getCountOfDBAvailableIP() || proxyPoolService.getCountOfDBAvailableIP() < 1)) {
             ArrayList<String> proxyList = proxyPoolService.getThirdPartyProxyList();
             // Adding available proxy list in db
+            log.info("third party proxy list size = " + proxyList.size());
             ArrayList<ProxyList> proxyListWithStatus = new ArrayList<>();
             proxyList.forEach((proxy) -> {
                 if (proxy != null) {

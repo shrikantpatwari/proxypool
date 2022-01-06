@@ -24,10 +24,9 @@ public class ProxyPoolControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("Should List All Posts When making GET request to endpoint - /proxy")
+    @DisplayName("Should return an IP When making GET request to endpoint - /proxy")
     public void shouldCreatePost() throws Exception {
         Mockito.when(proxyPoolService.getAProxy()).thenReturn("103.53.76.82:8089");
-
         mockMvc.perform(get("/proxy/")).andExpect(status().is(200)).andExpect(content().string("103.53.76.82:8089"));
     }
 }
