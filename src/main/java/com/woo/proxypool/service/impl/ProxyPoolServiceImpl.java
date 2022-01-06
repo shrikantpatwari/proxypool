@@ -5,9 +5,8 @@ import com.woo.proxypool.data.repository.ProxyListRepository;
 import com.woo.proxypool.service.api.ProxyPoolService;
 import com.woo.proxypool.util.RateLimitingQueue;
 import com.woo.proxypool.util.WooConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -15,12 +14,11 @@ import java.util.Date;
 import java.util.HashMap;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ProxyPoolServiceImpl implements ProxyPoolService {
 
-    Logger logger = LoggerFactory.getLogger(ProxyPoolServiceImpl.class);
-
-    @Autowired
-    ProxyListRepository proxyListRepository;
+    private final ProxyListRepository proxyListRepository;
 
     @Override
     public String getAProxy() {
@@ -106,7 +104,7 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
     @Override
     public Long getCountOfDBAvailableIP() {
         Long count = proxyListRepository.count();
-        logger.info(String.valueOf(count));
+        log.info(String.valueOf(count));
         return count;
     }
 
@@ -128,10 +126,10 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
             }
         } catch (Exception e) {
             // TODO: Set proper error message for exception
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
         if (proxy != null) {
-            logger.info(proxy.getIp());
+            log.info(proxy.getIp());
             proxy.setStatus(WooConstants.IN_USE);
             proxyListRepository.save(proxy);
             return proxy;
@@ -148,28 +146,28 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
             ArrayList<Long> secondsQueue = queues.get("secondsQueue");
             ArrayList<Long> minutesQueue = queues.get("minutesQueue");
             ArrayList<Long> dayQueue = queues.get("dayQueue");
-            if (queuesCount.get("secondsQueue") > WooConstants.SECONDS_QUEUE_LIMIT ) {
+            if (queuesCount.get("secondsQueue") >= WooConstants.SECONDS_QUEUE_LIMIT ) {
                 if (RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(secondsQueue.get(0), time, WooConstants.SECONDS_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
-                    RateLimitingQueue.getInstance().initQueues();
-                    limitExhausted = true;
-                } else {
                     secondsQueue.remove(0);
+                } else {
+                    RateLimitingQueue.getInstance().initQueues();
+                    limitExhausted = true;
                 }
             }
-            if (!limitExhausted && queuesCount.get("minutesQueue") > WooConstants.MINUTES_QUEUE_LIMIT) {
+            if (!limitExhausted && queuesCount.get("minutesQueue") >= WooConstants.MINUTES_QUEUE_LIMIT) {
                 if (RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(minutesQueue.get(0), time, WooConstants.MINUTES_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
+                    minutesQueue.remove(0);
+                } else {
                     RateLimitingQueue.getInstance().initQueues();
                     limitExhausted = true;
-                } else {
-                    minutesQueue.remove(0);
                 }
             }
-            if (!limitExhausted && queuesCount.get("dayQueue") > WooConstants.DAY_QUEUE_LIMIT) {
+            if (!limitExhausted && queuesCount.get("dayQueue") >= WooConstants.DAY_QUEUE_LIMIT) {
                 if (RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(minutesQueue.get(0), time, WooConstants.DAY_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
+                    dayQueue.remove(0);
+                } else {
                     RateLimitingQueue.getInstance().initQueues();
                     limitExhausted = true;
-                } else {
-                    dayQueue.remove(0);
                 }
             }
             secondsQueue.add(time);
@@ -178,7 +176,7 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
             return limitExhausted;
         } catch (Exception e) {
             // TODO: Set proper error message for exception
-            logger.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
         }
         return true;
     }

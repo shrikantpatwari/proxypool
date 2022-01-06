@@ -1,10 +1,11 @@
 package com.woo.proxypool.util;
 
-import javax.xml.crypto.Data;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 
+@Slf4j
 public class RateLimitingQueue {
     private static RateLimitingQueue rateLimitingQueue = null;
 
@@ -22,6 +23,7 @@ public class RateLimitingQueue {
     }
 
     public void initQueues () {
+        log.info("initialized all queues");
         secondsQueue = new ArrayList<Long>();
         minutesQueue = new ArrayList<Long>();
         dayQueue = new ArrayList<Long>();
@@ -44,10 +46,7 @@ public class RateLimitingQueue {
     }
 
     public Boolean isTimeDifferenceGreaterThanEqualTo(Long timeT1, Long timeT2, Long diffInMilliSeconds) {
-        Long diff = timeT2 - timeT1;
-        if (diff >= diffInMilliSeconds) {
-            return true;
-        }
-        return false;
+        long diff = timeT2 - timeT1;
+        return diff >= diffInMilliSeconds;
     }
 }
