@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +20,10 @@ import java.util.HashMap;
 public class ProxyPoolServiceImpl implements ProxyPoolService {
 
     private final ProxyListRepository proxyListRepository;
+
+    private final RateLimitingQueue rateLimitingQueue = RateLimitingQueue.getInstance();
+
+    private final ReentrantLock reLock = new ReentrantLock(true);
 
     @Override
     public String getAProxy() {
@@ -139,44 +144,41 @@ public class ProxyPoolServiceImpl implements ProxyPoolService {
 
     @Override
     public Boolean checkIfLimitsExhausted(Long time) {
+        reLock.lock();
         try {
             boolean limitExhausted = false;
-            HashMap<String, Integer> queuesCount = RateLimitingQueue.getInstance().getCountOfItemsInAllQueues();
-            HashMap<String, ArrayList<Long>> queues = RateLimitingQueue.getInstance().getAllQueues();
-            ArrayList<Long> secondsQueue = queues.get("secondsQueue");
-            ArrayList<Long> minutesQueue = queues.get("minutesQueue");
-            ArrayList<Long> dayQueue = queues.get("dayQueue");
+            HashMap<String, Integer> queuesCount = rateLimitingQueue.getCountOfItemsInAllQueues();
             if (queuesCount.get("secondsQueue") >= WooConstants.SECONDS_QUEUE_LIMIT ) {
-                if (RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(secondsQueue.get(0), time, WooConstants.SECONDS_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
-                    secondsQueue.remove(0);
+                if (rateLimitingQueue.isTimeDifferenceGreaterThanEqualTo(rateLimitingQueue.getSecondsQueueFirstElement(), time, WooConstants.SECONDS_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
+                    rateLimitingQueue.removeSecondsQueueFirstElement();
                 } else {
-                    RateLimitingQueue.getInstance().initQueues();
+                    rateLimitingQueue.initQueues();
                     limitExhausted = true;
                 }
             }
             if (!limitExhausted && queuesCount.get("minutesQueue") >= WooConstants.MINUTES_QUEUE_LIMIT) {
-                if (RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(minutesQueue.get(0), time, WooConstants.MINUTES_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
-                    minutesQueue.remove(0);
+                if (rateLimitingQueue.isTimeDifferenceGreaterThanEqualTo(rateLimitingQueue.getMinutesQueueFirstElement(), time, WooConstants.MINUTES_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
+                    rateLimitingQueue.removeMinutesQueueFirstElement();
                 } else {
-                    RateLimitingQueue.getInstance().initQueues();
+                    rateLimitingQueue.initQueues();
                     limitExhausted = true;
                 }
             }
             if (!limitExhausted && queuesCount.get("dayQueue") >= WooConstants.DAY_QUEUE_LIMIT) {
-                if (RateLimitingQueue.getInstance().isTimeDifferenceGreaterThanEqualTo(minutesQueue.get(0), time, WooConstants.DAY_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
-                    dayQueue.remove(0);
+                if (rateLimitingQueue.isTimeDifferenceGreaterThanEqualTo(rateLimitingQueue.getDayQueueFirstElement(), time, WooConstants.DAY_QUEUE_DIFFERENCE_IN_MILLISECONDS)) {
+                    rateLimitingQueue.removeDayQueueFirstElement();
                 } else {
-                    RateLimitingQueue.getInstance().initQueues();
+                    rateLimitingQueue.initQueues();
                     limitExhausted = true;
                 }
             }
-            secondsQueue.add(time);
-            minutesQueue.add(time);
-            dayQueue.add(time);
+            rateLimitingQueue.addTimeStampToQueues(time);
             return limitExhausted;
         } catch (Exception e) {
             // TODO: Set proper error message for exception
             log.error(e.getMessage(), e);
+        } finally {
+            reLock.unlock();
         }
         return true;
     }
