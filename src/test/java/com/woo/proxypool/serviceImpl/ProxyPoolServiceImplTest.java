@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
+import com.bugsnag.Bugsnag;
+import com.woo.proxypool.data.repository.UserProxyRepository;
 import com.woo.proxypool.service.api.ProxyPoolService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,13 +30,19 @@ public class ProxyPoolServiceImplTest {
     @Mock
     private ProxyListRepository proxyListRepository;
 
+    @Mock
+    private UserProxyRepository userProxyRepository;
+
+    @Mock
+    private Bugsnag bugsnag;
+
     private ProxyPoolService proxyPoolService;
 
     private RateLimitingQueue rateLimitingQueue;
 
     @BeforeEach
     public void init() {
-        proxyPoolService = new ProxyPoolServiceImpl(proxyListRepository);
+        proxyPoolService = new ProxyPoolServiceImpl(proxyListRepository, userProxyRepository, bugsnag);
         rateLimitingQueue = RateLimitingQueue.getInstance();
         rateLimitingQueue.initQueues();
     }
@@ -59,7 +67,7 @@ public class ProxyPoolServiceImplTest {
     @Test
     @DisplayName("getReadyOrInUserIPFromDB method should return valid proxy for first call if there is proxy with ready status")
     void shouldBeValidProxy_GetReadyOrInUserIPFromDB() {
-        ProxyList proxyList = new ProxyList(1L, "103.53.76.82:8089", WooConstants.READY, new Date(), new Date());
+        ProxyList proxyList = new ProxyList(1L, "103.53.76.82:8089", 0, WooConstants.READY, new Date(), new Date());
         when(proxyListRepository.findFirstByStatus(WooConstants.IN_USE)).thenReturn(null);
         when(proxyListRepository.findFirstByStatus(WooConstants.READY)).thenReturn(proxyList);
         ProxyList expectedProxy = proxyPoolService.getReadyOrInUserIPFromDB();
@@ -419,7 +427,7 @@ public class ProxyPoolServiceImplTest {
     @Test
     @DisplayName("getProxy method should return valid IP If No Proxy With InUse but have proxy with Ready Status")
     void shouldBeValidProxy_GetAProxy_If_Proxy_Available() {
-        ProxyList proxyList = new ProxyList(1L, "103.53.76.82:8089", WooConstants.READY, new Date(), new Date());
+        ProxyList proxyList = new ProxyList(1L, "103.53.76.82:8089", 0, WooConstants.READY, new Date(), new Date());
         when(proxyListRepository.findFirstByStatus(WooConstants.IN_USE)).thenReturn(null);
         when(proxyListRepository.findFirstByStatus(WooConstants.READY)).thenReturn(proxyList);
         String ip = proxyPoolService.getAProxy();

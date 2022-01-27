@@ -1,9 +1,8 @@
 package com.woo.proxypool.controller;
 
+import com.bugsnag.Bugsnag;
 import com.woo.proxypool.service.api.ProxyPoolService;
-import com.woo.proxypool.util.WooConstants;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.slf4j.Logger;
@@ -13,22 +12,42 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 @RestController
-@RequestMapping("/proxy")
 public class ProxyPoolController {
-    Logger logger = LoggerFactory.getLogger(ProxyPoolController.class);
     @Autowired
     ProxyPoolService proxyPoolService;
+
+    @Autowired
+    Bugsnag bugsnag;
 
     @Operation(summary = "Get proxy from proxy pool", description = "", tags = {"getProxy"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Proxy returned successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid input"),
             @ApiResponse(responseCode = "409", description = "User already exists")})
-    @GetMapping()
+    @RequestMapping( value = "/proxy", method = {RequestMethod.GET}, produces = "text/plain")
     public ResponseEntity<String> getAProxy() {
         return new ResponseEntity<String>(proxyPoolService.getAProxy(), HttpStatus.OK);
     }
+
+    @Operation(summary = "Get proxy from user proxies", description = "", tags = {"getProxyByUserId"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Proxy returned successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input"),
+            @ApiResponse(responseCode = "409", description = "User already exists")})
+    @RequestMapping( value = "/user-proxy", method = {RequestMethod.GET}, produces = "text/plain")
+    public ResponseEntity<String> getAProxyForUser(@RequestParam String userid) {
+        ResponseEntity<String> responseEntity;
+        try {
+            responseEntity = new ResponseEntity<String>(proxyPoolService.getProxyForUser(userid), HttpStatus.OK);
+        } catch (Exception e) {
+            bugsnag.notify(e);
+            responseEntity = new ResponseEntity<>("Error: Something went wrong, try again", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        return responseEntity;
+    }
+
 }
 
 /**

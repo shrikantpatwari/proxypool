@@ -18,18 +18,21 @@ import java.util.Date;
 @Table(name = "proxy_list")
 public class ProxyList {
     @Id
-    @SequenceGenerator(name= "CLIENT_SEQUENCE", sequenceName = "CLIENT_SEQUENCE_ID", initialValue=1, allocationSize = 1)
-    @GeneratedValue(strategy=GenerationType.AUTO, generator="CLIENT_SEQUENCE")
+    @SequenceGenerator(name= "PROXY_SEQUENCE", sequenceName = "PROXY_SEQUENCE_ID", initialValue=1, allocationSize = 1)
+    @GeneratedValue(strategy=GenerationType.AUTO, generator="PROXY_SEQUENCE")
     Long id;
     String ip;
+    @Column(name = "usage_count")
+    Integer usageCount;
     Integer status;
     @CreationTimestamp
     Date createdAt;
     @UpdateTimestamp
     Date updatedAt;
 
-    public ProxyList(String ip, Integer status) {
+    public ProxyList(String ip, Integer usageCount, Integer status) {
         this.ip = ip;
+        this.usageCount = usageCount;
         this.status = status;
     }
 

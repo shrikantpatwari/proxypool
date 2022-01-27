@@ -37,7 +37,7 @@ public class IPPoolManager {
             ArrayList<ProxyList> proxyListWithStatus = new ArrayList<>();
             proxyList.forEach((proxy) -> {
                 if (proxy != null) {
-                    proxyListWithStatus.add(new ProxyList(proxy, WooConstants.READY));
+                    proxyListWithStatus.add(new ProxyList(proxy, 0, WooConstants.READY));
                 }
             });
             proxyPoolService.addProxyListBulk(proxyListWithStatus);

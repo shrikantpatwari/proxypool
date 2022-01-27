@@ -1,31 +1,42 @@
 package com.woo.proxypool.service.impl;
 
+import com.bugsnag.Bugsnag;
 import com.woo.proxypool.service.api.KafkaConsumerService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.woo.proxypool.service.api.ProxyPoolService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-//@Service
+@Slf4j
+@RequiredArgsConstructor
+@Service
 public class KafkaConsumerServiceImpl implements KafkaConsumerService {
-    private final Logger logger =
-            LoggerFactory.getLogger(KafkaConsumerServiceImpl.class);
+
+    @Autowired
+    Bugsnag bugsnag;
+
+    private final ProxyPoolService proxyPoolService;
+
 
     @Override
-    @KafkaListener(topics = "seconds", groupId = "groupId")
-    public void consumeSeconds(String message) {
-        logger.info(String.format("Message received in seconds queue -> %s", message));
-    }
-
-    @Override
-    @KafkaListener(topics = "minutes", groupId = "groupId")
-    public void consumeMinutes(String message) {
-        logger.info(String.format("Message received in minutes queue -> %s", message));
-    }
-
-    @Override
-    @KafkaListener(topics = "day", groupId = "groupId")
-    public void consumeDay(String message) {
-        logger.info(String.format("Message received in day queue -> %s", message));
+    @KafkaListener(topics = "Bot_Updates", groupId = "groupId")
+    public void consumeTopicMessage(String message) {
+        log.info(String.format("Message received in backoffice queue -> %s", message));
+        try {
+            JSONObject jsonObject = new JSONObject(message);
+            if (jsonObject.get("Type").equals("NewBotActivated")) {
+                proxyPoolService.assignProxyToUser(jsonObject);
+            }
+            if (jsonObject.get("Type").equals("BotProxyResponse")) {
+                proxyPoolService.assignNewProxy(jsonObject);
+            }
+        } catch (JSONException je) {
+            log.error(je.getMessage(), je);
+            bugsnag.notify(je);
+        }
     }
 }

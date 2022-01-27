@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface ProxyListRepository extends JpaRepository<ProxyList, Long> {
     ProxyList findFirstByStatus(Integer status);
+    ProxyList findFirstByIp(String ip);
 }

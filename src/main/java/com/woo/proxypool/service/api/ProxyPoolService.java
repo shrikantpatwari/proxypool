@@ -1,6 +1,7 @@
 package com.woo.proxypool.service.api;
 
 import com.woo.proxypool.data.entity.ProxyList;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 
@@ -16,4 +17,12 @@ public interface ProxyPoolService {
     ProxyList getReadyOrInUserIPFromDB();
 
     Boolean checkIfLimitsExhausted(Long time);
+
+    ProxyList getReadyProxyFromDB();
+
+    void assignProxyToUser(JSONObject activatedUser);
+
+    void assignNewProxy(JSONObject user);
+
+    String getProxyForUser(String userId);
 }

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 public class StartUpInitializer {
     @EventListener
     public void handleContextRefresh(ContextRefreshedEvent event) {
-        RateLimitingQueue.getInstance().initQueues();
         IPPoolManager.getInstance(event.getApplicationContext()).getAndCreateIPPool();
     }
 }

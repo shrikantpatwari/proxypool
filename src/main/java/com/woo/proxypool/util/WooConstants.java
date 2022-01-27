@@ -10,6 +10,8 @@ public class WooConstants {
     public static final Integer DEAD = 3;
     public static final Integer EXHAUSTED = 4;
 
+    public static final Integer MAX_USAGE_LIMIT = 5;
+
     public static final Long SECONDS_QUEUE_DIFFERENCE_IN_MILLISECONDS = 1000L;
     public static final Integer SECONDS_QUEUE_LIMIT = 49;
 
